@@ -1945,6 +1945,7 @@ static int __init inet_init(void)
 
 	sock_skb_cb_check_size(sizeof(struct inet_skb_parm));
 
+	// 这个函数做一些初始化，创建memcache，并注册到socket的一个全局表中，后续看在主要的发包流程中不会用到这个全局表。看上去这个表主要是在proc文件中显示当前系统中有多少个socket协议
 	rc = proto_register(&tcp_prot, 1);
 	if (rc)
 		goto out;
@@ -1964,7 +1965,7 @@ static int __init inet_init(void)
 	/*
 	 *	Tell SOCKET that we are alive...
 	 */
-
+	// 注册ip协议族，socket协同调用的时候指定的domain。就是在选协议族。
 	(void)sock_register(&inet_family_ops);
 
 #ifdef CONFIG_SYSCTL
@@ -1979,6 +1980,8 @@ static int __init inet_init(void)
 		pr_crit("%s: Cannot add ICMP protocol\n", __func__);
 	if (inet_add_protocol(&udp_protocol, IPPROTO_UDP) < 0)
 		pr_crit("%s: Cannot add UDP protocol\n", __func__);
+
+	// 注册tcp收包结构，结构在下文贴出
 	if (inet_add_protocol(&tcp_protocol, IPPROTO_TCP) < 0)
 		pr_crit("%s: Cannot add TCP protocol\n", __func__);
 #ifdef CONFIG_IP_MULTICAST
@@ -1991,6 +1994,7 @@ static int __init inet_init(void)
 		INIT_LIST_HEAD(r);
 
 	for (q = inetsw_array; q < &inetsw_array[INETSW_ARRAY_LEN]; ++q)
+		// 注册四层协议结构。用户态程序创建socket第二个和第三个参数 type 和protol，就是用来筛选这个结构的。 
 		inet_register_protosw(q);
 
 	/*
