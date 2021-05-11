@@ -320,8 +320,8 @@ static inline void list_splice_init(struct list_head *list,
 				    struct list_head *head)
 {
 	if (!list_empty(list)) {
-		__list_splice(list, head, head->next);
-		INIT_LIST_HEAD(list);
+		__list_splice(list, head, head->next); 	// 将list链表挂到head链表中，新的表头为head，list不再是表头。
+		INIT_LIST_HEAD(list);	// 初始化list为空链表
 	}
 }
 

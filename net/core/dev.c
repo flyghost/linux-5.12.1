@@ -7041,37 +7041,41 @@ static int napi_threaded_poll(void *data)
 	return 0;
 }
 
+// 由ksoftirqd调用
+// 内核中的ksoftirqd进程专门负责软中断的处理
+// 收包软中断处理函数，最终调用设备poll 函数处理报文
 static __latent_entropy void net_rx_action(struct softirq_action *h)
 {
 	struct softnet_data *sd = this_cpu_ptr(&softnet_data);
 	unsigned long time_limit = jiffies +
 		usecs_to_jiffies(netdev_budget_usecs);
 	int budget = netdev_budget;
-	LIST_HEAD(list);
+	LIST_HEAD(list);		// 初始化一个空的双向链表，list为双向链表头
 	LIST_HEAD(repoll);
 
 	local_irq_disable();
-	list_splice_init(&sd->poll_list, &list);
+	list_splice_init(&sd->poll_list, &list);		// 将poll_List挂到list链表中，并将poll_list初始化为空链表
 	local_irq_enable();
 
 	for (;;) {
 		struct napi_struct *n;
 
+		// 是否是空链表
 		if (list_empty(&list)) {
 			if (!sd_has_rps_ipi_waiting(sd) && list_empty(&repoll))
 				return;
 			break;
 		}
 
-		n = list_first_entry(&list, struct napi_struct, poll_list);
-		budget -= napi_poll(n, &repoll);
+		n = list_first_entry(&list, struct napi_struct, poll_list);// 这里始终取第一个，处理完成摘除节点处理是在 napi_poll 中.
+		budget -= napi_poll(n, &repoll);	// napi_poll 主要是为了调用设备注册的 poll 函数，如果报文未处理完（通过poll 函数的配额判断）会通过repoll记录这个设备的napi结构，后面再挂到sd中。
 
 		/* If softirq window is exhausted then punt.
 		 * Allow this to run for 2 jiffies since which will allow
 		 * an average latency of 1.5/HZ.
 		 */
 		if (unlikely(budget <= 0 ||
-			     time_after_eq(jiffies, time_limit))) {
+			     time_after_eq(jiffies, time_limit))) {	// budget 是每次软中断执行的配额，配额用尽或者poll函数执行的时间超过2个tick，结束处理
 			sd->time_squeeze++;
 			break;
 		}
@@ -7079,11 +7083,11 @@ static __latent_entropy void net_rx_action(struct softirq_action *h)
 
 	local_irq_disable();
 
-	list_splice_tail_init(&sd->poll_list, &list);
+	list_splice_tail_init(&sd->poll_list, &list);	// 把这个napi重新加到sd->poll_list头部，等待下次软中断再次poll
 	list_splice_tail(&repoll, &list);
 	list_splice(&list, &sd->poll_list);
 	if (!list_empty(&sd->poll_list))
-		__raise_softirq_irqoff(NET_RX_SOFTIRQ);
+		__raise_softirq_irqoff(NET_RX_SOFTIRQ);	// 存在未处理完的情况，再次触发软中断，等待下次处理
 
 	net_rps_action_and_irq_enable(sd);
 }
