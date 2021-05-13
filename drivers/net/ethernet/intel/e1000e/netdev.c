@@ -1883,12 +1883,12 @@ static irqreturn_t e1000_intr(int __always_unused irq, void *data)
 		return IRQ_HANDLED;
 	}
 
-	if (napi_schedule_prep(&adapter->napi)) {
+	if (napi_schedule_prep(&adapter->napi)) {	// 如果没有在运行的NAPI任务，调度一个新的NAPI任务
 		adapter->total_tx_bytes = 0;
 		adapter->total_tx_packets = 0;
 		adapter->total_rx_bytes = 0;
 		adapter->total_rx_packets = 0;
-		__napi_schedule(&adapter->napi);
+		__napi_schedule(&adapter->napi);	// 调用通用的NAPI处理函数
 	}
 
 	return IRQ_HANDLED;
@@ -7373,7 +7373,7 @@ static int e1000_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 		goto err_alloc_etherdev;
 
 	err = -ENOMEM;
-	netdev = alloc_etherdev(sizeof(struct e1000_adapter));
+	netdev = alloc_etherdev(sizeof(struct e1000_adapter));	// 为网卡创建网络设备对象 net_device 结构，并完成注册
 	if (!netdev)
 		goto err_alloc_etherdev;
 
@@ -7381,7 +7381,7 @@ static int e1000_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 
 	netdev->irq = pdev->irq;
 
-	pci_set_drvdata(pdev, netdev);
+	pci_set_drvdata(pdev, netdev);	// 设置网卡私有数据
 	adapter = netdev_priv(netdev);
 	hw = &adapter->hw;
 	adapter->netdev = netdev;
@@ -7399,7 +7399,7 @@ static int e1000_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	mmio_len = pci_resource_len(pdev, 0);
 
 	err = -EIO;
-	adapter->hw.hw_addr = ioremap(mmio_start, mmio_len);
+	adapter->hw.hw_addr = ioremap(mmio_start, mmio_len);	// 映射寄存器IO区域（后面拷贝报文）
 	if (!adapter->hw.hw_addr)
 		goto err_ioremap;
 
@@ -7418,10 +7418,10 @@ static int e1000_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 		adapter->eee_advert = MDIO_EEE_100TX | MDIO_EEE_1000T;
 
 	/* construct the net_device struct */
-	netdev->netdev_ops = &e1000e_netdev_ops;
+	netdev->netdev_ops = &e1000e_netdev_ops;	// 挂载网络设备操作接口
 	e1000e_set_ethtool_ops(netdev);
 	netdev->watchdog_timeo = 5 * HZ;
-	netif_napi_add(netdev, &adapter->napi, e1000e_poll, 64);
+	netif_napi_add(netdev, &adapter->napi, e1000e_poll, 64);	// 初始化并挂载设备的NAPI接口，e1000_clean 是其poll函数，软中断中调用处理报文
 	strlcpy(netdev->name, pci_name(pdev), sizeof(netdev->name));
 
 	netdev->mem_start = mmio_start;
