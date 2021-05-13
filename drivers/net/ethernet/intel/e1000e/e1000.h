@@ -184,6 +184,7 @@ struct e1000_phy_regs {
 };
 
 /* board specific private data structure */
+// 板级专用的私有数据结构
 struct e1000_adapter {
 	struct timer_list watchdog_timer;
 	struct timer_list phy_info_timer;

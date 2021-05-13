@@ -7043,21 +7043,21 @@ static int napi_threaded_poll(void *data)
 
 // 由ksoftirqd调用
 // 内核中的ksoftirqd进程专门负责软中断的处理
-// 收包软中断处理函数，最终调用设备poll 函数处理报文
+// 收包软中断处理函数，最终调用设备 poll 函数处理报文
 static __latent_entropy void net_rx_action(struct softirq_action *h)
 {
-	struct softnet_data *sd = this_cpu_ptr(&softnet_data);
-	unsigned long time_limit = jiffies +
+	struct softnet_data *sd = this_cpu_ptr(&softnet_data);	// 获取当前CPU的softnet_data数据
+	unsigned long time_limit = jiffies +					// 设置处理时限
 		usecs_to_jiffies(netdev_budget_usecs);
-	int budget = netdev_budget;
-	LIST_HEAD(list);		// 初始化一个空的双向链表，list为双向链表头
+	int budget = netdev_budget;								// 设置此次最大处理包数
+	LIST_HEAD(list);										// 初始化一个空的双向链表，list为双向链表头
 	LIST_HEAD(repoll);
 
 	local_irq_disable();
-	list_splice_init(&sd->poll_list, &list);		// 将poll_List挂到list链表中，并将poll_list初始化为空链表
+	list_splice_init(&sd->poll_list, &list);				// 将 poll_List 挂到 list 链表中，并将 poll_list 初始化为空链表（把 poll_list 中的 napi 缓存到 list 中）
 	local_irq_enable();
 
-	for (;;) {
+	for (;;) {												// 对list中的napi循环处理
 		struct napi_struct *n;
 
 		// 是否是空链表
@@ -7068,6 +7068,11 @@ static __latent_entropy void net_rx_action(struct softirq_action *h)
 		}
 
 		n = list_first_entry(&list, struct napi_struct, poll_list);// 这里始终取第一个，处理完成摘除节点处理是在 napi_poll 中.
+
+		/**
+		 * 调用napi->poll函数从设备接收数据，poll函数是由设备驱动程序提供，并在设备初始化时通过netif_napi_add()函数放到设备的private data中。
+		 * poll函数从硬件中读取数据然后通过napi_gro_receive()函数把skb发送到网络协议栈做进一步处理。
+		**/
 		budget -= napi_poll(n, &repoll);	// napi_poll 主要是为了调用设备注册的 poll 函数，如果报文未处理完（通过poll 函数的配额判断）会通过repoll记录这个设备的napi结构，后面再挂到sd中。
 
 		/* If softirq window is exhausted then punt.
@@ -7083,9 +7088,12 @@ static __latent_entropy void net_rx_action(struct softirq_action *h)
 
 	local_irq_disable();
 
+	// 把未完成的 napi 加入到CPU全局 poll_list 中，待下次处理软中断时再次处理
 	list_splice_tail_init(&sd->poll_list, &list);	// 把这个napi重新加到sd->poll_list头部，等待下次软中断再次poll
 	list_splice_tail(&repoll, &list);
 	list_splice(&list, &sd->poll_list);
+
+	// poll_list 非空，此次处理超过时限或超过最大处理包数，重新出发软中断进行处理。
 	if (!list_empty(&sd->poll_list))
 		__raise_softirq_irqoff(NET_RX_SOFTIRQ);	// 存在未处理完的情况，再次触发软中断，等待下次处理
 

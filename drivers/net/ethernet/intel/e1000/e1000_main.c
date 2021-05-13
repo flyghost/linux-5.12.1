@@ -3762,6 +3762,7 @@ static irqreturn_t e1000_intr(int irq, void *data)
 		hw->get_link_status = 1;
 		/* guard against interrupt when we're going down */
 		if (!test_bit(__E1000_DOWN, &adapter->flags))
+			// 启动看门狗任务
 			schedule_delayed_work(&adapter->watchdog_task, 1);
 	}
 

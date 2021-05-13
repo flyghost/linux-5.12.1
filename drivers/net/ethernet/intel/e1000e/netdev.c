@@ -35,6 +35,7 @@ static int debug = -1;
 module_param(debug, int, 0);
 MODULE_PARM_DESC(debug, "Debug level (0=none,...,16=all)");
 
+// E1000信息
 static const struct e1000_info *e1000_info_tbl[] = {
 	[board_82571]		= &e1000_82571_info,
 	[board_82572]		= &e1000_82572_info,
@@ -57,6 +58,7 @@ struct e1000_reg_info {
 	char *name;
 };
 
+// E1000寄存器信息
 static const struct e1000_reg_info e1000_reg_info_tbl[] = {
 	/* General Registers */
 	{E1000_CTRL, "CTRL"},
@@ -1819,6 +1821,10 @@ static irqreturn_t e1000_intr_msi(int __always_unused irq, void *data)
  * @irq: interrupt number
  * @data: pointer to a network interface device structure
  **/
+// 设备中断
+// 当网卡接收到数据就会发出中断请求（IRQ），对应的中断处理函数就是e1000_intr()，该函数运行在中断上下文中，不可休眠
+// 设备初始化完毕并开启后，就进入就绪状态，当有数据到达网卡就触发中断（硬件中断），内核执行对应的中断处理程序（中断处理程序是上半部，要简短、迅速） 
+// 当执行完中断处理程序后内核触发NET_RX_SOFTIRQ软中断，进行下半部处理，NET_RX_SOFTIRQ对应的软中断处理函数是/net/core/dev.c/net_rx_action()，注册的地方是在系统初始化时
 static irqreturn_t e1000_intr(int __always_unused irq, void *data)
 {
 	struct net_device *netdev = data;
@@ -1888,6 +1894,12 @@ static irqreturn_t e1000_intr(int __always_unused irq, void *data)
 		adapter->total_tx_packets = 0;
 		adapter->total_rx_bytes = 0;
 		adapter->total_rx_packets = 0;
+
+		/**
+         * 调度接收
+         * 1、把napi加入到cpu的softnet_data.poll_list
+         * 2、触发软中断（softirq）NET_RX_SOFTIRQ 准备接收数据
+        **/
 		__napi_schedule(&adapter->napi);	// 调用通用的NAPI处理函数
 	}
 
@@ -4663,6 +4675,7 @@ int e1000e_open(struct net_device *netdev)
 	 */
 	e1000_configure(adapter);
 
+	// //注册中断请求，中断处理函数为 e1000_intr
 	err = e1000_request_irq(adapter);
 	if (err)
 		goto err_req_irq;
@@ -4691,6 +4704,7 @@ int e1000e_open(struct net_device *netdev)
 	hw->mac.get_link_status = true;
 	pm_runtime_put(&pdev->dev);
 
+	// 触发链路状态变更中断，启动看门狗
 	e1000e_trigger_lsc(adapter);
 
 	return 0;
@@ -5202,6 +5216,8 @@ static void e1000_watchdog_task(struct work_struct *work)
 		return;
 
 	link = e1000e_has_link(adapter);
+
+	// 链路已激活并有载波->链路状态正常，去更新统计数据
 	if ((netif_carrier_ok(netdev)) && link) {
 		/* Cancel scheduled suspend requests. */
 		pm_runtime_resume(netdev->dev.parent);
@@ -5215,7 +5231,7 @@ static void e1000_watchdog_task(struct work_struct *work)
 		e1000_update_mng_vlan(adapter);
 
 	if (link) {
-		if (!netif_carrier_ok(netdev)) {
+		if (!netif_carrier_ok(netdev)) {		// 链路已激活但是没有载波，检测到设备启动
 			bool txb2b = true;
 
 			/* Cancel scheduled suspend requests. */
@@ -5337,7 +5353,7 @@ static void e1000_watchdog_task(struct work_struct *work)
 					  round_jiffies(jiffies + 2 * HZ));
 		}
 	} else {
-		if (netif_carrier_ok(netdev)) {
+		if (netif_carrier_ok(netdev)) {		// 链路未激活但有载波，检测到设备关闭
 			adapter->link_speed = 0;
 			adapter->link_duplex = 0;
 			/* Link status message must follow this format */
@@ -5439,7 +5455,7 @@ link_up:
 		}
 	}
 
-	/* Reset the timer */
+	/* Reset the timer 2HZ后再次调用看门狗检测设备状态 */
 	if (!test_bit(__E1000_DOWN, &adapter->state))
 		mod_timer(&adapter->watchdog_timer,
 			  round_jiffies(jiffies + 2 * HZ));
@@ -7285,6 +7301,7 @@ static int e1000_set_features(struct net_device *netdev,
 	return 1;
 }
 
+// 设备的操作函数
 static const struct net_device_ops e1000e_netdev_ops = {
 	.ndo_open		= e1000e_open,
 	.ndo_stop		= e1000e_close,
@@ -7318,10 +7335,11 @@ static const struct net_device_ops e1000e_netdev_ops = {
  * The OS initialization, configuring of the adapter private structure,
  * and a hardware reset occur.
  **/
+// 设备初始化函数
 static int e1000_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
 	struct net_device *netdev;
-	struct e1000_adapter *adapter;
+	struct e1000_adapter *adapter;	// 设备私有属性
 	struct e1000_hw *hw;
 	const struct e1000_info *ei = e1000_info_tbl[ent->driver_data];
 	resource_size_t mmio_start, mmio_len;
@@ -7373,7 +7391,7 @@ static int e1000_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 		goto err_alloc_etherdev;
 
 	err = -ENOMEM;
-	netdev = alloc_etherdev(sizeof(struct e1000_adapter));	// 为网卡创建网络设备对象 net_device 结构，并完成注册
+	netdev = alloc_etherdev(sizeof(struct e1000_adapter));	// 为设备分配net_device结构体，并完成注册
 	if (!netdev)
 		goto err_alloc_etherdev;
 
@@ -7382,6 +7400,7 @@ static int e1000_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	netdev->irq = pdev->irq;
 
 	pci_set_drvdata(pdev, netdev);	// 设置网卡私有数据
+	// 设置设备的私有数据
 	adapter = netdev_priv(netdev);
 	hw = &adapter->hw;
 	adapter->netdev = netdev;
@@ -7418,10 +7437,18 @@ static int e1000_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 		adapter->eee_advert = MDIO_EEE_100TX | MDIO_EEE_1000T;
 
 	/* construct the net_device struct */
+	// 设置设备的操作函数
 	netdev->netdev_ops = &e1000e_netdev_ops;	// 挂载网络设备操作接口
 	e1000e_set_ethtool_ops(netdev);
 	netdev->watchdog_timeo = 5 * HZ;
+
+	/**
+     * 初始化该设备的napi，用于下半部接收数据；
+     * 该函数初始化napi字段，并把napi注册到全局napi_hash表中。
+     **/
 	netif_napi_add(netdev, &adapter->napi, e1000e_poll, 64);	// 初始化并挂载设备的NAPI接口，e1000_clean 是其poll函数，软中断中调用处理报文
+	
+	// 设置设备名称
 	strlcpy(netdev->name, pci_name(pdev), sizeof(netdev->name));
 
 	netdev->mem_start = mmio_start;
@@ -7540,6 +7567,7 @@ static int e1000_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	timer_setup(&adapter->watchdog_timer, e1000_watchdog, 0);
 	timer_setup(&adapter->phy_info_timer, e1000_update_phy_info, 0);
 
+	// 初始化延时任务，如看门狗任务
 	INIT_WORK(&adapter->reset_task, e1000_reset_task);
 	INIT_WORK(&adapter->watchdog_task, e1000_watchdog_task);
 	INIT_WORK(&adapter->downshift_task, e1000e_downshift_workaround);
@@ -7621,6 +7649,8 @@ static int e1000_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 		adapter->flags2 |= FLAG2_ENABLE_S0IX_FLOWS;
 
 	strlcpy(netdev->name, "eth%d", sizeof(netdev->name));
+
+	// 注册网络设备net_device
 	err = register_netdev(netdev);
 	if (err)
 		goto err_register;
@@ -7885,19 +7915,19 @@ static const struct dev_pm_ops e1000_pm_ops = {
 /* PCI Device API Driver */
 static struct pci_driver e1000_driver = {
 	.name     = e1000e_driver_name,		// 驱动的名子. 它必须是唯一的, 在内核中所有 PCI 驱动里面. 通常被设置为和驱动模块名子相同的名子. 它显示在 sysfs 中在 /sys/bus/pci/drivers/ 下, 当驱动在内核时
-	.id_table = e1000_pci_tbl,			// 指向 struct pci_device_id 表的指针, 在本章后面描述它.
+	.id_table = e1000_pci_tbl,			// 该驱动程序所支持的网卡设备列表
 	
 	// 指向 PCI 驱动中 probe 函数的指针. 这个函数被 PCI 核心调用, 当它有一个它认为这个驱动想控制的 struct pci_dev 时. 一个指向 struct pci_device_id 的指针, PCI 核心用来做这个决定的, 也被传递给这个函数. 
 	// 如果这个 PCI 驱动需要这个传递给它的 struct pci_dev, 它应当正确初始化这个设备并且返回 0. 如果这个驱动不想拥有这个设备, 或者产生一个错误, 它应当返回一个负的错误值
-	.probe    = e1000_probe,
+	.probe    = e1000_probe,	// 设备初始化函数，当PCI子系统检测到该驱动所支持的设备被插入到总线上时，调用该函数对设备进行初始化操作
 
 	// 指向 PCI 核心在 struct pci_dev 被从系统中去除时调用的函数的指针, 或者当 PCI 驱动被从内核中卸载时
 	.remove   = e1000_remove,
 	.driver   = {
 		.pm = &e1000_pm_ops,
 	},
-	.shutdown = e1000_shutdown,
-	.err_handler = &e1000_err_handler
+	.shutdown = e1000_shutdown,			// 系统关闭时调用
+	.err_handler = &e1000_err_handler	// 错误处理器
 };
 
 /**
@@ -7911,6 +7941,7 @@ static int __init e1000_init_module(void)
 	pr_info("Intel(R) PRO/1000 Network Driver\n");
 	pr_info("Copyright(c) 1999 - 2015 Intel Corporation.\n");
 
+	/* 注册pci驱动 - 把e1000驱动程序以pci_driver形式注册到pci子系统中 */
 	return pci_register_driver(&e1000_driver);	// 成功返回0，错误返回一个负的错误码
 }
 module_init(e1000_init_module);
