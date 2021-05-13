@@ -7735,6 +7735,16 @@ static const struct pci_error_handlers e1000_err_handler = {
 };
 
 static const struct pci_device_id e1000_pci_tbl[] = {
+	/*
+	{ 
+		.vendor = PCI_VENDOR_ID_INTEL, 
+		.device = (E1000_DEV_ID_82571EB_COPPER), 
+		.subvendor = PCI_ANY_ID, 
+		.subdevice = PCI_ANY_ID, 
+		0, 
+		0, 
+		board_82571
+	*/
 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_82571EB_COPPER), board_82571 },
 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_82571EB_FIBER), board_82571 },
 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_82571EB_QUAD_COPPER), board_82571 },
@@ -7851,6 +7861,12 @@ static const struct pci_device_id e1000_pci_tbl[] = {
 
 	{ 0, 0, 0, 0, 0, 0, 0 }	/* terminate list */
 };
+// 将模块输出的用户空间，来允许热插拔和模块加载系统知道什么模块使用什么硬件设备
+// 这个语句创建一个局部变量称为 __mod_pci_device_table, 它指向 struct pci_device_id 的列表. 
+// 稍后在内核建立过程中, depmod 程序在所有的模块中寻找 __mod_pci_device_table. 
+// 如果找到这个符号, 它将数据拉出模块并且添加到文件 /lib/modules/KERNEL_VERSION/modules.pcimap. 
+// 在 depmod 完成后, 所有的被内核中的模块支持的 PCI 设备被列出, 带有它们的模块名子, 在那个文件中. 
+// 当内核告知热插拔系统有新的 PCI 设备已找到, 热插拔系统使用 moudles.pcimap 文件来找到正确的驱动来加载.
 MODULE_DEVICE_TABLE(pci, e1000_pci_tbl);
 
 static const struct dev_pm_ops e1000_pm_ops = {
@@ -7868,9 +7884,14 @@ static const struct dev_pm_ops e1000_pm_ops = {
 
 /* PCI Device API Driver */
 static struct pci_driver e1000_driver = {
-	.name     = e1000e_driver_name,
-	.id_table = e1000_pci_tbl,
+	.name     = e1000e_driver_name,		// 驱动的名子. 它必须是唯一的, 在内核中所有 PCI 驱动里面. 通常被设置为和驱动模块名子相同的名子. 它显示在 sysfs 中在 /sys/bus/pci/drivers/ 下, 当驱动在内核时
+	.id_table = e1000_pci_tbl,			// 指向 struct pci_device_id 表的指针, 在本章后面描述它.
+	
+	// 指向 PCI 驱动中 probe 函数的指针. 这个函数被 PCI 核心调用, 当它有一个它认为这个驱动想控制的 struct pci_dev 时. 一个指向 struct pci_device_id 的指针, PCI 核心用来做这个决定的, 也被传递给这个函数. 
+	// 如果这个 PCI 驱动需要这个传递给它的 struct pci_dev, 它应当正确初始化这个设备并且返回 0. 如果这个驱动不想拥有这个设备, 或者产生一个错误, 它应当返回一个负的错误值
 	.probe    = e1000_probe,
+
+	// 指向 PCI 核心在 struct pci_dev 被从系统中去除时调用的函数的指针, 或者当 PCI 驱动被从内核中卸载时
 	.remove   = e1000_remove,
 	.driver   = {
 		.pm = &e1000_pm_ops,
@@ -7890,7 +7911,7 @@ static int __init e1000_init_module(void)
 	pr_info("Intel(R) PRO/1000 Network Driver\n");
 	pr_info("Copyright(c) 1999 - 2015 Intel Corporation.\n");
 
-	return pci_register_driver(&e1000_driver);
+	return pci_register_driver(&e1000_driver);	// 成功返回0，错误返回一个负的错误码
 }
 module_init(e1000_init_module);
 

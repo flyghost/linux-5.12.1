@@ -888,6 +888,7 @@ struct pci_driver {
  * specific device.  The subvendor and subdevice fields will be set to
  * PCI_ANY_ID.
  */
+// 这个创建一个 struct pci_device_id , 它只匹配特定的供应商和设备 ID. 这个宏设置这个结构的子供应商和子设备成员为 PCI_ANY_ID
 #define PCI_DEVICE(vend,dev) \
 	.vendor = (vend), .device = (dev), \
 	.subvendor = PCI_ANY_ID, .subdevice = PCI_ANY_ID
@@ -930,6 +931,8 @@ struct pci_driver {
  * to PCI_ANY_ID. The macro allows the next field to follow as the device
  * private data.
  */
+// 这个创建一个 struct pci_device_id , 它只匹配特定的供应商和设备 ID. 这个宏设置这个结构的子供应商和子设备成员为 PCI_ANY_ID
+// 与 PCI_DEVICE 不同的是，这个将 class ， class_mast 设置为0
 #define PCI_VDEVICE(vend, dev) \
 	.vendor = PCI_VENDOR_ID_##vend, .device = (dev), \
 	.subvendor = PCI_ANY_ID, .subdevice = PCI_ANY_ID, 0, 0

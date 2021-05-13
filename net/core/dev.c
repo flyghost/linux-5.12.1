@@ -4318,8 +4318,8 @@ static inline void ____napi_schedule(struct softnet_data *sd,
 		}
 	}
 
-	list_add_tail(&napi->poll_list, &sd->poll_list);
-	__raise_softirq_irqoff(NET_RX_SOFTIRQ);
+	list_add_tail(&napi->poll_list, &sd->poll_list);	//  将设备的napi 挂载带了 sd 的poll_list中。
+	__raise_softirq_irqoff(NET_RX_SOFTIRQ);	//  触发软中断
 }
 
 #ifdef CONFIG_RPS
@@ -6900,7 +6900,7 @@ static int __napi_poll(struct napi_struct *n, bool *repoll)
 {
 	int work, weight;
 
-	weight = n->weight;
+	weight = n->weight;	// poll 函数的配额
 
 	/* This NAPI_STATE_SCHED test is for avoiding a race
 	 * with netpoll's poll_napi().  Only the entity which
@@ -6910,7 +6910,7 @@ static int __napi_poll(struct napi_struct *n, bool *repoll)
 	 */
 	work = 0;
 	if (test_bit(NAPI_STATE_SCHED, &n->state)) {
-		work = n->poll(n, weight);
+		work = n->poll(n, weight);	// 调用设备的poll 函数处理报文
 		trace_napi_poll(n, work, weight);
 	}
 
@@ -6918,7 +6918,7 @@ static int __napi_poll(struct napi_struct *n, bool *repoll)
 		pr_err_once("NAPI poll function %pS returned %d, exceeding its budget of %d.\n",
 			    n->poll, work, weight);
 
-	if (likely(work < weight))
+	if (likely(work < weight))	// 配额未用尽，结束处理
 		return work;
 
 	/* Drivers must not modify the NAPI state if they
@@ -6973,7 +6973,7 @@ static int napi_poll(struct napi_struct *n, struct list_head *repoll)
 	void *have;
 	int work;
 
-	list_del_init(&n->poll_list);
+	list_del_init(&n->poll_list);	// 摘节点
 
 	have = netpoll_poll_lock(n);
 

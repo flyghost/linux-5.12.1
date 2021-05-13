@@ -36,9 +36,17 @@ typedef unsigned long kernel_ulong_t;
  *			instead of using it as a pointer.
  */
 struct pci_device_id {
+	// 这些指定一个设备的 PCI 供应商和设备 ID. 如果驱动可处理任何供应商或者设备 ID, 值 PCI_ANY_ID 应当用作这些成员上
 	__u32 vendor, device;		/* Vendor and device ID or PCI_ANY_ID*/
+
+	// 这些指定一个设备的 PCI 子系统供应商和子系统设备 ID. 如果驱动可处理任何类型的子系统 ID, 值 PCI_ANY_ID 应当用作这些成员上
 	__u32 subvendor, subdevice;	/* Subsystem ID's or PCI_ANY_ID */
+
+	// 这 2 个值允许驱动来指定它支持一类 PCI 类设备. 不同的 PCI 设备类( 一个 VAG 控制器是一个例子 )在 PCI 规范里被描述. 如果一个驱动可处理任何子系统 ID, 值 PCI_ANY_ID 应当用作这些字段
+	// 例如, "ethernet"和"token ring"是 2 个类都属于"network"群, 而"serial"和"parallel"属于"communication"群
 	__u32 class, class_mask;	/* (class,subclass,prog-if) triplet */
+
+	// 这个值不用来匹配一个设备, 但是用来持有信息, PCI 驱动可用来区分不同的设备, 如果它想这样
 	kernel_ulong_t driver_data;	/* Data private to the driver */
 };
 
