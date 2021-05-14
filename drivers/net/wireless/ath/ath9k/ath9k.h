@@ -980,24 +980,24 @@ void ath_ant_comb_scan(struct ath_softc *sc, struct ath_rx_status *rs);
 #define ATH9K_NUM_CHANCTX  2 /* supports 2 operating channels */
 
 struct ath_softc {
-	struct ieee80211_hw *hw;
-	struct device *dev;
+	struct ieee80211_hw *hw;						// 保存硬件信息
+	struct device *dev;								// 当前工作的设备
 
 	struct survey_info *cur_survey;
 	struct survey_info survey[ATH9K_NUM_CHANNELS];
 
 	spinlock_t intr_lock;
 	struct tasklet_struct intr_tq;
-	struct tasklet_struct bcon_tasklet;
+	struct tasklet_struct bcon_tasklet;				// 结构体定义在 include <linux/interrupt.h>  用于中断管理
 	struct ath_hw *sc_ah;
 	void __iomem *mem;
 	int irq;
 	spinlock_t sc_serial_rw;
 	spinlock_t sc_pm_lock;
-	spinlock_t sc_pcu_lock;
+	spinlock_t sc_pcu_lock;							// 进行数据读取，或者处理skb时需要的锁
 	struct mutex mutex;
 	struct work_struct paprd_work;
-	struct work_struct hw_reset_work;
+	struct work_struct hw_reset_work;				// 执行不同工作的工作队列
 	struct completion paprd_complete;
 	wait_queue_head_t tx_wait;
 
