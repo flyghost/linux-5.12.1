@@ -80,14 +80,14 @@ struct fwnode_handle;
  * private data.
  */
 struct bus_type {
-	const char		*name;
+	const char		*name;							// 总线名字
 	const char		*dev_name;
 	struct device		*dev_root;
-	const struct attribute_group **bus_groups;
-	const struct attribute_group **dev_groups;
-	const struct attribute_group **drv_groups;
+	const struct attribute_group **bus_groups;		// 总线属性
+	const struct attribute_group **dev_groups;		// 设备属性
+	const struct attribute_group **drv_groups;		// 驱动属性
 
-	int (*match)(struct device *dev, struct device_driver *drv);
+	int (*match)(struct device *dev, struct device_driver *drv);	// 完成设备和驱动之间匹配的，总线就是使用 match 函数来根据注册的设备来查找对应的驱动，或者根据注册的驱动来查找相应的设备
 	int (*uevent)(struct device *dev, struct kobj_uevent_env *env);
 	int (*probe)(struct device *dev);
 	void (*sync_state)(struct device *dev);

@@ -102,8 +102,8 @@ struct device_driver {
 	bool suppress_bind_attrs;	/* disables bind/unbind via sysfs */
 	enum probe_type probe_type;
 
-	const struct of_device_id	*of_match_table;
-	const struct acpi_device_id	*acpi_match_table;
+	const struct of_device_id	*of_match_table;		// 采用设备树时启动驱动使用的匹配表，of_match_table.compatible来比较
+	const struct acpi_device_id	*acpi_match_table;		// 
 
 	int (*probe) (struct device *dev);
 	void (*sync_state)(struct device *dev);

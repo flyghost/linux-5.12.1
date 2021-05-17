@@ -117,11 +117,12 @@ static const struct e1000_reg_info e1000_reg_info_tbl[] = {
  * has bit 24 set while ME is accessing MAC CSR registers, wait if it is set
  * and try again a number of times.
  **/
+// 准备再某些部分上写入MAC CSR寄存器
 static void __ew32_prepare(struct e1000_hw *hw)
 {
 	s32 i = E1000_ICH_FWSM_PCIM2PCI_COUNT;
 
-	while ((er32(FWSM) & E1000_ICH_FWSM_PCIM2PCI) && --i)
+	while ((er32(FWSM) & E1000_ICH_FWSM_PCIM2PCI) && --i)	// ME PCIm-to-PCI是否处于活动状态
 		udelay(50);
 }
 
@@ -134,9 +135,9 @@ void __ew32(struct e1000_hw *hw, unsigned long reg, u32 val)
 }
 
 /**
- * e1000_regdump - register printout routine
- * @hw: pointer to the HW structure
- * @reginfo: pointer to the register info table
+ * e1000_regdump - register printout routine		注册打印输出例程
+ * @hw: pointer to the HW structure					指向硬件结构的指针
+ * @reginfo: pointer to the register info table		指向寄存器信息表的指针
  **/
 static void e1000_regdump(struct e1000_hw *hw, struct e1000_reg_info *reginfo)
 {
@@ -7336,26 +7337,28 @@ static const struct net_device_ops e1000e_netdev_ops = {
  * and a hardware reset occur.
  **/
 // 设备初始化函数
+// pdev
+// pci_device_id pci设备ID表
 static int e1000_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
 	struct net_device *netdev;
 	struct e1000_adapter *adapter;	// 设备私有属性
 	struct e1000_hw *hw;
-	const struct e1000_info *ei = e1000_info_tbl[ent->driver_data];
+	const struct e1000_info *ei = e1000_info_tbl[ent->driver_data];	// 获取对应E1000的一个设备信息e1000_info
 	resource_size_t mmio_start, mmio_len;
 	resource_size_t flash_start, flash_len;
 	static int cards_found;
-	u16 aspm_disable_flag = 0;
+	u16 aspm_disable_flag = 0;						// ASPM活动状态电源管理
 	int bars, i, err, pci_using_dac;
 	u16 eeprom_data = 0;
 	u16 eeprom_apme_mask = E1000_EEPROM_APME;
 	s32 ret_val = 0;
 
-	if (ei->flags2 & FLAG2_DISABLE_ASPM_L0S)
+	if (ei->flags2 & FLAG2_DISABLE_ASPM_L0S)		// FLAG2_DISABLE_ASPM_L0S标志位是否为1
 		aspm_disable_flag = PCIE_LINK_STATE_L0S;
-	if (ei->flags2 & FLAG2_DISABLE_ASPM_L1)
+	if (ei->flags2 & FLAG2_DISABLE_ASPM_L1)			// FLAG2_DISABLE_ASPM_L1标志位是否为1
 		aspm_disable_flag |= PCIE_LINK_STATE_L1;
-	if (aspm_disable_flag)
+	if (aspm_disable_flag)							// DISABLE ASPM L0S或者L1任意一个为1，则禁用ASPM活动状态电源管理
 		e1000e_disable_aspm(pdev, aspm_disable_flag);
 
 	err = pci_enable_device_mem(pdev);
@@ -7764,6 +7767,7 @@ static const struct pci_error_handlers e1000_err_handler = {
 	.resume = e1000_io_resume,
 };
 
+// PCI设备ID表
 static const struct pci_device_id e1000_pci_tbl[] = {
 	/*
 	{ 
@@ -7774,6 +7778,7 @@ static const struct pci_device_id e1000_pci_tbl[] = {
 		0, 
 		0, 
 		board_82571
+	}
 	*/
 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_82571EB_COPPER), board_82571 },
 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_82571EB_FIBER), board_82571 },
@@ -7927,7 +7932,7 @@ static struct pci_driver e1000_driver = {
 		.pm = &e1000_pm_ops,
 	},
 	.shutdown = e1000_shutdown,			// 系统关闭时调用
-	.err_handler = &e1000_err_handler	// 错误处理器
+	.err_handler = &e1000_err_handler	// 错误处理句柄
 };
 
 /**

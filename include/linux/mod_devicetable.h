@@ -35,6 +35,7 @@ typedef unsigned long kernel_ulong_t;
  *			into a static list of equivalent device types,
  *			instead of using it as a pointer.
  */
+// PCI设备ID表
 struct pci_device_id {
 	// 这些指定一个设备的 PCI 供应商和设备 ID. 如果驱动可处理任何供应商或者设备 ID, 值 PCI_ANY_ID 应当用作这些成员上
 	__u32 vendor, device;		/* Vendor and device ID or PCI_ANY_ID*/
@@ -270,7 +271,7 @@ struct sdw_device_id {
 struct of_device_id {
 	char	name[32];
 	char	type[32];
-	char	compatible[128];
+	char	compatible[128]; // 对于设备树而言，通过设备节点的compatible值和of_match_table中每一个项目的compatible进行比较，相等表示设备与该驱动匹配成功
 	const void *data;
 };
 

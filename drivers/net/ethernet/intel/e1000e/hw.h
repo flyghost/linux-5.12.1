@@ -691,10 +691,10 @@ struct e1000_dev_spec_ich8lan {
 };
 
 struct e1000_hw {
-	struct e1000_adapter *adapter;
+	struct e1000_adapter *adapter;	// e1000板级私有适配器
 
-	void __iomem *hw_addr;
-	void __iomem *flash_address;
+	void __iomem *hw_addr;			// 硬件地址，
+	void __iomem *flash_address;	// flash地址
 
 	struct e1000_mac_info mac;
 	struct e1000_fc_info fc;

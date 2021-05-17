@@ -1386,18 +1386,23 @@ static int platform_match(struct device *dev, struct device_driver *drv)
 		return !strcmp(pdev->driver_override, drv->name);
 
 	/* Attempt an OF style match first */
+	// OF类型的匹配，也就是设备数匹配
 	if (of_driver_match_device(dev, drv))
 		return 1;
 
 	/* Then try ACPI style match */
+	// ACPI匹配方式
 	if (acpi_driver_match_device(dev, drv))
 		return 1;
 
 	/* Then try to match against the id table */
+	// id table匹配方式
+	// 每个platform_driver结构体有一个id_table成员变量，id 信息存放着这个 platformd 驱动所支持的驱动类型
 	if (pdrv->id_table)
 		return platform_match_id(pdrv->id_table, pdev) != NULL;
 
 	/* fall-back to driver name match */
+	// 最后一种匹配方式，如果上面的匹配方式id_table不存在的话，则直接比较驱动和设备的name字段
 	return (strcmp(pdev->name, drv->name) == 0);
 }
 
@@ -1510,10 +1515,11 @@ static const struct dev_pm_ops platform_dev_pm_ops = {
 	USE_PLATFORM_PM_SLEEP_OPS
 };
 
+// 平台总线
 struct bus_type platform_bus_type = {
 	.name		= "platform",
 	.dev_groups	= platform_dev_groups,
-	.match		= platform_match,
+	.match		= platform_match,		// 匹配函数
 	.uevent		= platform_uevent,
 	.probe		= platform_probe,
 	.remove		= platform_remove,
@@ -1548,14 +1554,14 @@ int __init platform_bus_init(void)
 {
 	int error;
 
-	early_platform_cleanup();
+	early_platform_cleanup();					// 清理早期平台代码
 
-	error = device_register(&platform_bus);
+	error = device_register(&platform_bus);		// 设备注册，平台总线设备
 	if (error) {
-		put_device(&platform_bus);
+		put_device(&platform_bus);				// 设备引用减一
 		return error;
 	}
-	error =  bus_register(&platform_bus_type);
+	error =  bus_register(&platform_bus_type);	// 总线注册，平台总线（虚拟总线）
 	if (error)
 		device_unregister(&platform_bus);
 	of_platform_register_reconfig_notifier();

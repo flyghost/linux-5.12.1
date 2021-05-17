@@ -278,7 +278,7 @@ struct e1000_adapter {
 	struct pci_dev *pdev;
 
 	/* structs defined in e1000_hw.h */
-	struct e1000_hw hw;
+	struct e1000_hw hw;		// 指向包含自身结构体的e1000_hw结构体地址
 
 	spinlock_t stats64_lock;	/* protects statistics counters */
 	struct e1000_hw_stats stats;
