@@ -86,15 +86,15 @@ struct driver_private {
  * Nothing outside of the driver core should ever touch these fields.
  */
 struct device_private {
-	struct klist klist_children;
-	struct klist_node knode_parent;
-	struct klist_node knode_driver;
-	struct klist_node knode_bus;
+	struct klist klist_children;			// 子设备的klist链表
+	struct klist_node knode_parent;			// 接入父设备的klist_children时所需要的klist节点
+	struct klist_node knode_driver;			// 接入驱动的设备链表时所需要的klist节点
+	struct klist_node knode_bus;			// 接入总线的设备链表时所需要的klist节点
 	struct klist_node knode_class;
 	struct list_head deferred_probe;
 	struct device_driver *async_driver;
 	char *deferred_probe_reason;
-	struct device *device;
+	struct device *device;					// 回指struct device结构体的指针
 	u8 dead:1;
 };
 #define to_device_private_parent(obj)	\

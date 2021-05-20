@@ -457,19 +457,19 @@ struct dev_links_info {
  */
 struct device {
 	struct kobject kobj;
-	struct device		*parent;
+	struct device		*parent;		// 指向设备的“父”设备，它所连接的设备，在大多数情况下，父设备是某种总线或主机控制器，如果该成员为NULL，则该设备为顶级设备
 
-	struct device_private	*p;
+	struct device_private	*p;			// 用于保存设备驱动核心部分的私有数据
 
-	const char		*init_name; /* initial name of the device */
-	const struct device_type *type;
+	const char		*init_name; /* initial name of the device */		// 设备的初始名称
+	const struct device_type *type;										// 设备的类型，用于标识设备类型并携带特定类型信息
 
-	struct bus_type	*bus;		/* type of bus device is on */
-	struct device_driver *driver;	/* which driver has allocated this
+	struct bus_type	*bus;		/* type of bus device is on */			// 该设备所处于的总线
+	struct device_driver *driver;	/* which driver has allocated this	// 该设备所分配的驱动程序
 					   device */
-	void		*platform_data;	/* Platform specific data, device
+	void		*platform_data;	/* Platform specific data, device		// 设备中特定的平台数据
 					   core doesn't touch it */
-	void		*driver_data;	/* Driver data, set and get with
+	void		*driver_data;	/* Driver data, set and get with		// 指向驱动程序特定的私有数据
 					   dev_set_drvdata/dev_get_drvdata */
 #ifdef CONFIG_PROVE_LOCKING
 	struct mutex		lockdep_mutex;
@@ -522,22 +522,22 @@ struct device {
 	/* arch specific additions */
 	struct dev_archdata	archdata;
 
-	struct device_node	*of_node; /* associated device tree node */
+	struct device_node	*of_node; /* associated device tree node */		// 与设备数相联系的结构体指针
 	struct fwnode_handle	*fwnode; /* firmware device node */
 
 #ifdef CONFIG_NUMA
 	int		numa_node;	/* NUMA node this device is close to */
 #endif
-	dev_t			devt;	/* dev_t, creates the sysfs "dev" */
+	dev_t			devt;	/* dev_t, creates the sysfs "dev" */		// 用于表示设备的设备号
 	u32			id;	/* device instance */
 
-	spinlock_t		devres_lock;
-	struct list_head	devres_head;
+	spinlock_t		devres_lock;										// 保护设备资源的自旋锁
+	struct list_head	devres_head;									// 设备资源的双向链表头
 
-	struct class		*class;
-	const struct attribute_group **groups;	/* optional groups */
+	struct class		*class;											// 指向设备所属class的指针
+	const struct attribute_group **groups;	/* optional groups */		// 该设备的属性集合
 
-	void	(*release)(struct device *dev);
+	void	(*release)(struct device *dev);								// 函数指针，当设备需要释放时调用此函数
 	struct iommu_group	*iommu_group;
 	struct dev_iommu	*iommu;
 

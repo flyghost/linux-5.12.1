@@ -3650,6 +3650,7 @@ struct device *device_find_child_by_name(struct device *parent,
 }
 EXPORT_SYMBOL_GPL(device_find_child_by_name);
 
+// 在设备驱动模型初始化时调用的部分初始函数，它实现的功能是建立sysfs中的devices目录和dev目录，然后在dev目录下建立block和char两个子目录，block和char目录用来存放设备号文件
 int __init devices_init(void)
 {
 	devices_kset = kset_create_and_add("devices", &device_uevent_ops, NULL);

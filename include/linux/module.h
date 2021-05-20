@@ -304,9 +304,9 @@ struct module_use {
 };
 
 enum module_state {
-	MODULE_STATE_LIVE,	/* Normal state. */
-	MODULE_STATE_COMING,	/* Full formed, running module_init. */
-	MODULE_STATE_GOING,	/* Going away. */
+	MODULE_STATE_LIVE,	/* Normal state. */							// 模块当前正常使用中（存活状态）
+	MODULE_STATE_COMING,	/* Full formed, running module_init. */	// 模块当前正在被加载
+	MODULE_STATE_GOING,	/* Going away. */							// 模块当前正在被卸载
 	MODULE_STATE_UNFORMED,	/* Still setting it up. */
 };
 
@@ -359,10 +359,10 @@ struct module {
 	enum module_state state;
 
 	/* Member of list of modules */
-	struct list_head list;
+	struct list_head list;						// 模块列表成员
 
 	/* Unique handle for this module */
-	char name[MODULE_NAME_LEN];
+	char name[MODULE_NAME_LEN];					// 模块名字
 
 	/* Sysfs stuff. */
 	struct module_kobject mkobj;
